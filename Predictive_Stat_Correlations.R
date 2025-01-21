@@ -16,9 +16,22 @@ batterstats <- batterstatsmain |>
          289:291)
 
 batterstats <- batterstats |>
-  rename('name' = 'PlayerNameRoute.x')
+  rename('name' = 'PlayerNameRoute.x',
+         'BB_pct_plus' = 'BB_pct.',
+         'K_pct_plus' = 'K_pct.',
+         'OBP_plus' = 'OBP.',
+         'SLG_plus' = 'SLG.',
+         'ISO_plus' = 'ISO.',
+         'BABIP_plus' = 'BABIP.',
+         'LD_pct_plus' = 'LD_pct.',
+         'FB_pct_plus' = 'FB_pct.',
+         'GB_pct_plus' = 'GB_pct.',
+         'HRFB_pct_plus' = 'HRFB_pct.'
+         )
 
 batterstats$name[c(3038)] <- "Carlos PerezOAK"
+
+
 #
 #
 
