@@ -6,6 +6,7 @@ library(ggplot2)
 library(reshape2)
 library(RColorBrewer)
 library(tidyr)
+library(stringr)
 
 pitcherstatsmain <- read.csv("https://raw.githubusercontent.com/dresio12/Predictive_Stat_Correlation_Studies/main/pitcherstats.csv", stringsAsFactors = FALSE)
 
@@ -91,35 +92,35 @@ b2324 <- batterstats |>
 
 #2019-20
 ds1920 <- b1920 %>%
-  select(6:185) %>%
+  select(8:185) %>%
   na.omit()
 
 #
 
 #2020-21 
 ds2021 <- b2021 %>%
-  select(6:185) %>%
+  select(8:185) %>%
   na.omit()
 
 #
 
 #2021-22
 ds2122 <- b2122 %>%
-  select(6:185) %>%
+  select(8:185) %>%
   na.omit()
 
 #
 
 #2022-23
 ds2223 <- b2223 %>%
-  select(6:185) %>%
+  select(8:185) %>%
   na.omit()
 
 #
 
 #2023-24 dfs
 ds2324 <- b2324 %>%
-  select(6:185) %>%
+  select(8:185) %>%
   na.omit()
 
 #
@@ -226,35 +227,35 @@ p2324 <- pitcherstats |>
 
 #2019-20
 pds1920 <- p1920 %>%
-  select(4:49, 54:57, 60:71, 88:145) %>%
+  select(6:49, 54:57, 60:71, 88:145) %>%
   na.omit()
 
 #
 
 #2020-21 
 pds2021 <- p2021 %>%
-  select(4:49, 54:57, 60:71, 88:145) %>%
+  select(6:49, 54:57, 60:71, 88:145) %>%
   na.omit()
 
 #
 
 #2021-22
 pds2122 <- p2122 %>%
-  select(4:49, 54:57, 60:71, 88:145) %>%
+  select(6:49, 54:57, 60:71, 88:145) %>%
   na.omit()
 
 #
 
 #2022-23
 pds2223 <- p2223 %>%
-  select(4:49, 54:57, 60:71, 88:145) %>%
+  select(6:49, 54:57, 60:71, 88:145) %>%
   na.omit()
 
 #
 
 #2023-24 dfs
 pds2324 <- p2324 %>%
-  select(4:49, 54:57, 60:71, 88:145) %>%
+  select(6:49, 54:57, 60:71, 88:145) %>%
   na.omit()
 
 # Identify yearly columns separately
@@ -298,3 +299,58 @@ pcm2324 <- cor(pds2324[, pcols_2023],
                use = "complete.obs")
 
 
+#
+#
+#
+
+#Standardizing data
+dfs <- list(ds1920, ds2021, ds2122, ds2223, ds2324)
+
+# Function to standardize a dataframe
+standardize_df <- function(df) {
+  # Apply scale function to all numeric columns in the dataframe
+  df_standardized <- df
+  numeric_cols <- sapply(df, is.numeric)  # Identify numeric columns
+  df_standardized[numeric_cols] <- scale(df[numeric_cols])
+  
+  return(df_standardized)
+}
+
+# Apply the standardization function to each dataframe
+sds1920 <- standardize_df(ds1920)
+sds2021 <- standardize_df(ds2021)
+sds2122 <- standardize_df(ds2122)
+sds2223 <- standardize_df(ds2223)
+sds2324 <- standardize_df(ds2324)
+
+# Compute correlation matrix (2019 stats vs. 2020 stats)
+scm1920 <- cor(sds1920[, cols_2019], 
+              sds1920[, cols_2020], 
+              use = "complete.obs")
+
+#
+#
+
+# Compute correlation matrix (2020 stats vs. 2021 stats)
+scm2021 <- cor(sds2021[, cols_2020], 
+              sds2021[, cols_2021], 
+              use = "complete.obs")
+
+#
+# Compute correlation matrix (2021 stats vs. 2022 stats)
+scm2122 <- cor(sds2122[, cols_2021], 
+              sds2122[, cols_2022], 
+              use = "complete.obs")
+
+#
+#
+# Compute correlation matrix (2022 stats vs. 2023 stats)
+scm2223 <- cor(sds2223[, cols_2022], 
+              sds2223[, cols_2023], 
+              use = "complete.obs")
+
+#
+# Compute standardized correlation matrix (2023 stats vs. 2024 stats)
+scm2324 <- cor(sds2324[, cols_2023], 
+              sds2324[, cols_2024], 
+              use = "complete.obs")
