@@ -33,9 +33,10 @@ batterstats <- batterstats |>
 
 batterstats$name[c(3038)] <- "Carlos PerezOAK"
 
-#creating minimum PA
+
+#creating minimum PA for correlation matrices
 batterstats <- batterstats |>
-  filter(PA >=90)
+  filter(PA >=50)
 
 #create rowbind dfs for the adjacent seasons
 #selects necessary columns
@@ -607,4 +608,3 @@ p_top_predictors_by_stat <- p_all_predictors_combined %>%
   group_by(Base_Stat) %>%                        # Group by each stat
   group_modify(~ get_top_10_per_stat(.x)) %>%     # Apply the function to each group
   ungroup()
-
