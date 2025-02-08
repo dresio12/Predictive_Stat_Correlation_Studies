@@ -33,6 +33,10 @@ batterstats <- batterstats |>
 
 batterstats$name[c(3038)] <- "Carlos PerezOAK"
 
+#creating minimum PA
+batterstats <- batterstats |>
+  filter(PA >=90)
+
 #create rowbind dfs for the adjacent seasons
 #selects necessary columns
 #widens df to assign season to each variable of interest
@@ -319,8 +323,8 @@ get_top_10_per_stat <- function(data) {
       Frequency = n(),                           # Count how many times the predictor appears
       Avg_Correlation = mean(Correlation)        # Calculate the average correlation value
     ) %>%
-    arrange(desc(Frequency), desc(Avg_Correlation)) %>%  # Rank by frequency, then avg correlation
-    slice_head(n = 10)                            # Take the top 5 predictors
+    arrange(desc(Avg_Correlation), desc(Frequency)) %>%  # Rank by frequency, then avg correlation
+    slice_head(n = 10)                            # Take the top 10 predictors
 }
 
 # Apply the function to each stat
@@ -341,8 +345,9 @@ s_top_predictors_by_stat <- s_all_predictors_combined %>%
 #Pitcher Stats
 pitcherstats <- pitcherstatsmain |>
   select(3, 1, 60, 4:28, 30:58, 61:66) |>
+  filter(PA >= 30) |>
   rename(Season = year) |>
-  unique()
+  unique() 
 
 
 #2019-20
@@ -593,8 +598,8 @@ get_top_10_per_stat <- function(data) {
       Frequency = n(),                           # Count how many times the predictor appears
       Avg_Correlation = mean(Correlation)        # Calculate the average correlation value
     ) %>%
-    arrange(desc(Frequency), desc(Avg_Correlation)) %>%  # Rank by frequency, then avg correlation
-    slice_head(n = 10)                            # Take the top 5 predictors
+    arrange(desc(Avg_Correlation), desc(Frequency)) %>%  # Rank by frequency, then avg correlation
+    slice_head(n = 10)                            # Take the top 10 predictors
 }
 
 # Apply the function to each stat
