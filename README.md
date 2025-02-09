@@ -11,9 +11,9 @@ missed seasons from 2024-2022 (the data used to predict), as there are NA values
 
 
 #Future Steps
-1. Examine performance when trained with unclean data and tested on unclean data
-2. Remove all retired/inactive players from the predict dataset
-3. Examine performance when trained with clean data, but predicting on data that includes missing season data for rookies and injured players
+Examine performance when trained with unclean data and tested on unclean data
+Remove all retired/inactive players from the predict dataset
+Examine performance when trained with clean data, but predicting on data that includes missing season data for rookies and injured players
    Make all missing data league averages
    Make missing data for rookies league average and missing data for vets career averages
    Make missing data for rookies MLB-adjusted minor league data and missing data for vets career averages
