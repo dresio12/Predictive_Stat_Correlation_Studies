@@ -12,10 +12,10 @@ Currently, the training data does not include NA values and the plate appearance
 2. Remove all retired/inactive players from the predict dataset
 3. Examine performance when trained with clean data, but predicting on data that includes missing season data for rookies and injured players
 
-  a. Make all missing data league averages
+  3a. Make all missing data league averages
 
-  b. Make missing data for rookies league average and missing data for vets career averages
+  3b. Make missing data for rookies league average and missing data for vets career averages
   
-  c. Make missing data for rookies MLB-adjusted minor league data and missing data for vets career averages
+  3c. Make missing data for rookies MLB-adjusted minor league data and missing data for vets career averages
   
-  d. Make missing data for rookies MLB-adjusted minor league data and missing data for vets league averages
+  3d. Make missing data for rookies MLB-adjusted minor league data and missing data for vets league averages
