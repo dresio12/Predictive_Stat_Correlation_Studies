@@ -88,32 +88,32 @@ b2324 <- batterstats |>
 #named ds for data subset, followed by corresponding tag
 
 #2019-20
-ds1920 <- b1920 %>%
-  select(8:185) %>%
+ds1920 <- b1920 |>
+  select(8:185) |>
   na.omit()
 
 
 #2020-21 
-ds2021 <- b2021 %>%
-  select(8:185) %>%
+ds2021 <- b2021 |>
+  select(8:185) |>
   na.omit()
 
 
 #2021-22
-ds2122 <- b2122 %>%
-  select(8:185) %>%
+ds2122 <- b2122 |>
+  select(8:185) |>
   na.omit()
 
 
 #2022-23
-ds2223 <- b2223 %>%
-  select(8:185) %>%
+ds2223 <- b2223 |>
+  select(8:185) |>
   na.omit()
 
 
 #2023-24 dfs
-ds2324 <- b2324 %>%
-  select(8:185) %>%
+ds2324 <- b2324 |>
+  select(8:185) |>
   na.omit()
 
 
@@ -299,10 +299,10 @@ for (base_stat in base_stat_list) {
     combined_data <- do.call(rbind, s_all_predictors_values[[base_stat]])
     
     # Ensure ordering by Year
-    combined_data <- combined_data %>%
-      group_by(Predictor, Year) %>%
-      arrange(Year, desc(Correlation)) %>%
-      slice_head(n = 5) %>%
+    combined_data <- combined_data |>
+      group_by(Predictor, Year) |>
+      arrange(Year, desc(Correlation)) |>
+      slice_head(n = 5) |>
       ungroup()
     
     # Save the filtered results
@@ -318,20 +318,20 @@ s_all_predictors_combined <- bind_rows(s_all_predictors_values, .id = "Base_Stat
 
 # Create a function to calculate top 10 predictors for each stat
 get_top_10_per_stat <- function(data) {
-  data %>%
-    group_by(Predictor) %>%                      # Group by each predictor
+  data |>
+    group_by(Predictor) |>                      # Group by each predictor
     summarize(
       Frequency = n(),                           # Count how many times the predictor appears
       Avg_Correlation = mean(Correlation)        # Calculate the average correlation value
-    ) %>%
-    arrange(desc(Avg_Correlation), desc(Frequency)) %>%  # Rank by frequency, then avg correlation
+    ) |>
+    arrange(desc(Avg_Correlation), desc(Frequency)) |>  # Rank by frequency, then avg correlation
     slice_head(n = 10)                            # Take the top 10 predictors
 }
 
 # Apply the function to each stat
-s_top_predictors_by_stat <- s_all_predictors_combined %>%
-  group_by(Base_Stat) %>%                        # Group by each stat
-  group_modify(~ get_top_10_per_stat(.x)) %>%     # Apply the function to each group
+s_top_predictors_by_stat <- s_all_predictors_combined |>
+  group_by(Base_Stat) |>                        # Group by each stat
+  group_modify(~ get_top_10_per_stat(.x)) |>     # Apply the function to each group
   ungroup()
 
 
@@ -395,32 +395,32 @@ p2324 <- pitcherstats |>
 #named ds for data subset, followed by corresponding tag
 
 #2019-20
-pds1920 <- p1920 %>%
-  select(6:123) %>%
+pds1920 <- p1920 |>
+  select(6:123) |>
   na.omit()
 
 
 #2020-21 
-pds2021 <- p2021 %>%
-  select(6:123) %>%
+pds2021 <- p2021 |>
+  select(6:123) |>
   na.omit()
 
 
 #2021-22
-pds2122 <- p2122 %>%
-  select(6:123) %>%
+pds2122 <- p2122 |>
+  select(6:123) |>
   na.omit()
 
 
 #2022-23
-pds2223 <- p2223 %>%
-  select(6:123) %>%
+pds2223 <- p2223 |>
+  select(6:123) |>
   na.omit()
 
 
 #2023-24 dfs
-pds2324 <- p2324 %>%
-  select(6:123) %>%
+pds2324 <- p2324 |>
+  select(6:123) |>
   na.omit()
 
 # Identify yearly columns separately
@@ -574,10 +574,10 @@ for (base_stat in base_stat_list) {
     combined_data <- do.call(rbind, p_all_predictors_values[[base_stat]])
     
     # Ensure ordering by Year
-    combined_data <- combined_data %>%
-      group_by(Predictor, Year) %>%
-      arrange(Year, desc(Correlation)) %>%
-      slice_head(n = 5) %>%
+    combined_data <- combined_data |>
+      group_by(Predictor, Year) |>
+      arrange(Year, desc(Correlation)) |>
+      slice_head(n = 5) |>
       ungroup()
     
     # Save the filtered results
@@ -593,18 +593,20 @@ p_all_predictors_combined <- bind_rows(p_all_predictors_values, .id = "Base_Stat
 
 # Create a function to calculate top 10 predictors for each stat
 get_top_10_per_stat <- function(data) {
-  data %>%
-    group_by(Predictor) %>%                      # Group by each predictor
+  data |>
+    group_by(Predictor) |>                      # Group by each predictor
     summarize(
       Frequency = n(),                           # Count how many times the predictor appears
       Avg_Correlation = mean(Correlation)        # Calculate the average correlation value
-    ) %>%
-    arrange(desc(Avg_Correlation), desc(Frequency)) %>%  # Rank by frequency, then avg correlation
+    ) |>
+    arrange(desc(Avg_Correlation), desc(Frequency)) |>  # Rank by frequency, then avg correlation
     slice_head(n = 10)                            # Take the top 10 predictors
 }
 
 # Apply the function to each stat
-p_top_predictors_by_stat <- p_all_predictors_combined %>%
-  group_by(Base_Stat) %>%                        # Group by each stat
-  group_modify(~ get_top_10_per_stat(.x)) %>%     # Apply the function to each group
+p_top_predictors_by_stat <- p_all_predictors_combined |>
+  group_by(Base_Stat) |>                        # Group by each stat
+  group_modify(~ get_top_10_per_stat(.x)) |>     # Apply the function to each group
   ungroup()
+
+
