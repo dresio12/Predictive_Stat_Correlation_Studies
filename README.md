@@ -9,7 +9,7 @@ Currently, the training data does not include NA values and the plate appearance
 
 #Future Steps
 
-~1. Examine performance when trained with unclean data and tested on unclean data~
+~1. Examine performance when trained with unclean data and tested on unclean data~ (approximated major league experience MLE as well, will make another file without that aspect)
 
 2. Remove all retired/inactive players from the predict dataset
 
