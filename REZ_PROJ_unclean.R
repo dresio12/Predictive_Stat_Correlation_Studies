@@ -480,7 +480,7 @@ batspredict <- batspredict |> mutate(predicted_avg = round(xgb_predictions, 3))
 boostedAVG3a <- batspredict |>
   select(name, predicted_avg, AVG_Y1, AVG_Y2, AVG_Y3)
 
-boostedAVG$meanAVG3a <- rowMeans(boostedAVG3a[, c("AVG_Y1", "AVG_Y2", "AVG_Y3")], na.rm = TRUE)
+boostedAVG3a$meanAVG <- rowMeans(boostedAVG3a[, c("AVG_Y1", "AVG_Y2", "AVG_Y3")], na.rm = TRUE)
 
 
 #plot
