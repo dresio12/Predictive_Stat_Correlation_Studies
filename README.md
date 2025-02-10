@@ -8,7 +8,7 @@ Currently, the training data does not include NA values and the plate appearance
 
 
 #Future Steps
-1. Examine performance when trained with unclean data and tested on unclean data
+~1. Examine performance when trained with unclean data and tested on unclean data~
 2. Remove all retired/inactive players from the predict dataset
 3. Examine performance when trained with clean data, but predicting on data that includes missing season data for rookies and injured players
 
