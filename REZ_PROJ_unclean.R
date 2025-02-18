@@ -567,3 +567,4 @@ ggplot(boostedAVG3c, aes(x = predicted_avg, y = meanAVG)) +
   theme_minimal()
 
 
+write.csv(batspredict, "unclean_unclean_mle.csv", row.names = FALSE)

@@ -491,3 +491,5 @@ sources
 }
 
 projections <- all_projections()
+
+write.csv(projections, "source_projections.csv", row.names = FALSE)

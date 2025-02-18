@@ -1,5 +1,6 @@
 #Building the REZ projection model
 library(baseballr)
+library(lubridate)
 library(tidyverse)
 library(readr)
 library(readxl)
@@ -12,7 +13,11 @@ library(randomForest)
 library(caret)
 library(xgboost)
 library(Matrix)
+library(stringi)
 
+
+#load in batstest from GitHub
+batstest <- read.csv("https://raw.githubusercontent.com/dresio12/Projection_System_2025/main/batstest.csv", stringsAsFactors = FALSE)
 
 #begin making training and predicting dfs
 
@@ -79,6 +84,24 @@ batstest <- batstest %>%
   )
 
 
+#creating lg_stat_year columns
+# Identify the unique years in the dataset based on column names
+years <- unique(sub(".*_(\\d{4})$", "\\1", colnames(batstest)))
+
+# Loop through each year and calculate the league average for each stat
+for (year in years) {
+  # Select columns that match the current year
+  stat_cols <- grep(paste0("_", year, "$"), colnames(batstest), value = TRUE)
+  
+  # Compute the mean for each stat column and create new league average columns
+  for (col in stat_cols) {
+    lg_col_name <- paste0("lg_", col)  # Create the new column name
+    batstest[[lg_col_name]] <- mean(batstest[[col]], na.rm = TRUE)  # Calculate and assign the mean
+  }
+}
+
+batstest <- batstest |> select(-542, -632, -722, -812, -902, - 992)
+
 #renaming columns to remove current year suffix, 
 #assign Y1 as most recent, Y3 most distant
 
@@ -88,7 +111,8 @@ int1 <- batstest |>
   rename_with(~ str_replace(., "_2024$", ""), ends_with("_2024")) |>
   rename_with(~ str_replace(., "_2023$", "_Y1"), ends_with("_2023")) |>
   rename_with(~ str_replace(., "_2022$", "_Y2"), ends_with("_2022")) |>
-  rename_with(~ str_replace(., "_2021$", "_Y3"), ends_with("_2021"))
+  rename_with(~ str_replace(., "_2021$", "_Y3"), ends_with("_2021")) |>
+  mutate(Year = 2024)
 
 
 #2023:2020
@@ -97,7 +121,8 @@ int2 <- batstest |>
   rename_with(~ str_replace(., "_2023$", ""), ends_with("_2023")) |>
   rename_with(~ str_replace(., "_2022$", "_Y1"), ends_with("_2022")) |>
   rename_with(~ str_replace(., "_2021$", "_Y2"), ends_with("_2021")) |>
-  rename_with(~ str_replace(., "_2020$", "_Y3"), ends_with("_2020"))
+  rename_with(~ str_replace(., "_2020$", "_Y3"), ends_with("_2020")) |>
+  mutate(Year = 2023)
 
 
 #2022:2019
@@ -106,12 +131,13 @@ int3 <- batstest |>
   rename_with(~ str_replace(., "_2022$", ""), ends_with("_2022")) |>
   rename_with(~ str_replace(., "_2021$", "_Y1"), ends_with("_2021")) |>
   rename_with(~ str_replace(., "_2020$", "_Y2"), ends_with("_2020")) |>
-  rename_with(~ str_replace(., "_2019$", "_Y3"), ends_with("_2019"))
+  rename_with(~ str_replace(., "_2019$", "_Y3"), ends_with("_2019")) |>
+  mutate(Year = 2022)
 
 
 #2025:2022 1-91
 int4 <- batstest |>
-  select(1:271) |>
+  select(1:271, 542:808) |>
   rename_with(~ str_replace(., "_2024$", "_Y1"), ends_with("_2024")) |>
   rename_with(~ str_replace(., "_2023$", "_Y2"), ends_with("_2023")) |>
   rename_with(~ str_replace(., "_2022$", "_Y3"), ends_with("_2022"))
@@ -130,8 +156,10 @@ batstrain <- bind_rows(int1, int2, int3)
 
 batspredict <- left_join(empty, int4)
 
+batspredict$name <- gsub("-", "", batspredict$name)
 
-#remove NA values from batstrain, 
+batstrain$name <- gsub("-", "", batstrain$name)
+
 #include only rows with meaningful number of PAs to build meaningful associations
 
 #im leaving in 3 year spans where one season may not have 50 PA because
@@ -141,27 +169,152 @@ batstrain <- batstrain |>
   drop_na() |>
   filter(PA >=50)
 
-#remove some of the inactive players (will remove all later)
-#(for future: fill in NAs with league averages or imputations for
-#active players who didn't play 3 consecutive years)
+#filling in NAs with lg_avgs
 
+# Loop through each column in batspredict
+for (col in colnames(batspredict)) {
+  # Skip columns that are already league averages (to avoid lg_lg_ duplication)
+  if (grepl("^lg_", col)) next
+  
+  # Construct the corresponding league average column name
+  lg_col <- paste0("lg_", col)
+  
+  # Check if the league average column exists
+  if (lg_col %in% colnames(batspredict)) {
+    # Replace NA values in batspredict with the corresponding league average
+    batspredict[[col]][is.na(batspredict[[col]])] <- batspredict[[lg_col]][is.na(batspredict[[col]])]
+  }
+}
+
+#remove lg_avgs since we no longer need them
+batspredict <- batspredict |> select(1:361)
+
+#Adding in Ages
+#obtaining debuts
+
+#int4
 players <- baseballr::mlb_sports_players(sport_id = 1, season = 2024)
 
-# Remove including special characters
-players$full_name <- gsub("ÃÂ©", "e" , players$full_name)
-players$full_name <- gsub("ÃÂ±", "n" , players$full_name)
-players$full_name <- gsub("ÃÂ¡", "a" , players$full_name)
-players$full_name <- gsub("ÃÂ¡", "i" , players$full_name)
+#int1
+players2 <- baseballr::mlb_sports_players(sport_id = 1, season = 2023)
+
+#int2
+players3 <- baseballr::mlb_sports_players(sport_id = 1, season = 2022)
+
+#int3
+players4 <- baseballr::mlb_sports_players(sport_id = 1, season = 2021)
+
+players <- players %>%
+  filter(primary_position_name != "Pitcher")
+
+players2 <- players2 %>%
+  filter(primary_position_name != "Pitcher")
+
+players3 <- players3 %>%
+  filter(primary_position_name != "Pitcher")
+
+players4 <- players4 %>%
+  filter(primary_position_name != "Pitcher")
+
+# Remove special characters
+players$full_name <- gsub("Ã©", "e" , players$full_name)
+players$full_name <- gsub("Ã±", "n" , players$full_name)
+players$full_name <- gsub("Ã¡", "a" , players$full_name)
 players$full_name <- gsub("i³", "i" , players$full_name)
 players$full_name <- gsub("Ã³", "o" , players$full_name)
-players$full_name <- gsub("ÃÂº", "u" , players$full_name)
+players$full_name <- gsub("Ãº", "u" , players$full_name)
+players$full_name <- gsub("Ã", "i" , players$full_name)
+players$full_name <- gsub("\\.", "", players$full_name)
 
 players <- players |>
+  select(full_name, active) 
+
+# Remove special characters
+players2$full_name <- gsub("Ã©", "e" , players2$full_name)
+players2$full_name <- gsub("Ã±", "n" , players2$full_name)
+players2$full_name <- gsub("Ã¡", "a" , players2$full_name)
+players2$full_name <- gsub("i³", "i" , players2$full_name)
+players2$full_name <- gsub("Ã³", "o" , players2$full_name)
+players2$full_name <- gsub("Ãº", "u" , players2$full_name)
+players2$full_name <- gsub("Ã", "i" , players2$full_name)
+players2$full_name <- gsub("\\.", "", players2$full_name)
+
+players2 <- players2 |>
   select(full_name, active)
 
-batspredict <- left_join(batspredict, players, by = c('name' = 'full_name'))
+# Remove special characters
+players3$full_name <- gsub("Ã©", "e" , players3$full_name)
+players3$full_name <- gsub("Ã±", "n" , players3$full_name)
+players3$full_name <- gsub("Ã¡", "a" , players3$full_name)
+players3$full_name <- gsub("i³", "i" , players3$full_name)
+players3$full_name <- gsub("Ã³", "o" , players3$full_name)
+players3$full_name <- gsub("Ãº", "u" , players3$full_name)
+players3$full_name <- gsub("Ã", "i" , players3$full_name)
+players3$full_name <- gsub("\\.", "", players3$full_name)
+
+players3 <- players3 |>
+  select(full_name, active)
+
+
+# Remove special characters
+players4$full_name <- gsub("Ã©", "e" , players4$full_name)
+players4$full_name <- gsub("Ã±", "n" , players4$full_name)
+players4$full_name <- gsub("Ã¡", "a" , players4$full_name)
+players4$full_name <- gsub("i³", "i" , players4$full_name)
+players4$full_name <- gsub("Ã³", "o" , players4$full_name)
+players4$full_name <- gsub("Ãº", "u" , players4$full_name)
+players4$full_name <- gsub("Ã", "i" , players4$full_name)
+players4$full_name <- gsub("\\.", "", players4$full_name)
+
+players4 <- players4 |>
+  select(full_name, active)
+
+#combine all players into one df
+playerdebuts <- bind_rows(players, players2, players3, players4) |>
+  select(full_name, active) |>
+  unique()
+
+
+# Normalize names in all datasets
+batspredict <- batspredict %>%
+  mutate(name = stri_trans_general(name, "Latin-ASCII"))
+
+players <- players %>%
+  mutate(full_name = stri_trans_general(full_name, "Latin-ASCII"))
+
+players$full_name <- gsub("-", "", players$full_name)
+
+players2 <- players2 %>%
+  mutate(full_name = stri_trans_general(full_name, "Latin-ASCII"))
+
+players2$full_name <- gsub("-", "", players2$full_name)
+
+players3 <- players3 %>%
+  mutate(full_name = stri_trans_general(full_name, "Latin-ASCII"))
+
+players3$full_name <- gsub("-", "", players3$full_name)
+
+players4 <- players4 %>%
+  mutate(full_name = stri_trans_general(full_name, "Latin-ASCII"))
+
+players4$full_name <- gsub("-", "", players4$full_name)
+
+batstrain <- batstrain %>%
+  mutate(name = stri_trans_general(name, "Latin-ASCII"))
+
+#other df changes
+players2$full_name[449] <- "Carlos PerezOAK"
+players3$full_name[480] <- "Carlos PerezOAK"
+players2$full_name[380] <- "Oscar Mercado"
+players3$full_name[410] <- "Oscar Mercado"
+players4$full_name[389] <- "Oscar Mercado"
+
+
+batspredict <- left_join(batspredict, playerdebuts, by = c('name' = 'full_name'))
+
+
 batspredict <- batspredict |> select(362, 1:361)
-  
+
 batspredict <- batspredict |>
   mutate(active = ifelse(!is.na(Age), "TRUE", active))
 
@@ -190,7 +343,7 @@ formula_pred <- as.formula(paste("~", paste(predictors, collapse = " + ")))
 #XGBoost
 
 # Convert to matrix format (excluding target variable)
-train_matrix <- model.matrix(formula, data = batstrain)[, -1]
+train_matrix <- as.matrix(batstrain[predictors])
 test_matrix <- as.matrix(batspredict[predictors])
 
 # Extract target variable
@@ -246,7 +399,7 @@ print(paste("Best RMSE:", round(best_rmse, 4)))
 print("Best Parameters:")
 (best_params)
 
-# Now, train the final model with the best parameters
+# Train the final model with the best parameters
 final_params <- list(
   objective = "reg:squarederror",  # Regression problem
   eta = best_params$eta,           # Best learning rate
@@ -258,19 +411,13 @@ final_params <- list(
 xgb_model <- xgboost(
   data = train_matrix,
   label = train_labels,
-  nrounds = 5000,         # Maximum boosting rounds (set a reasonable limit)
+  nrounds = 4000,         # Maximum boosting rounds (set a reasonable limit)
   params = final_params   # Best hyperparameters from grid search
 )
 
 # Make predictions on the test set
 xgb_predictions <- predict(xgb_model, test_matrix)
 
-# Calculate RMSE and R-squared
-rmse_xgb <- sqrt(mean((xgb_predictions - test_labels)^2))
-r2_xgb <- cor(xgb_predictions, test_labels)^2
-
-print(paste("XGBoost RMSE:", round(rmse_xgb, 4)))
-print(paste("XGBoost R²:", round(r2_xgb, 4)))
 
 # Plot feature importance
 xgb.importance(model = xgb_model)  # Displays feature importance
@@ -279,15 +426,16 @@ xgb.plot.importance(xgb.importance(model = xgb_model))  # Plots feature importan
 # Add predictions to the test_data and round them
 batspredict <- batspredict |> mutate(predicted_avg = round(xgb_predictions, 3))
 
+
 # Select relevant columns for output
-boostedAVG1a <- batspredict |>
+boostedAVG4a <- batspredict |>
   select(name, predicted_avg, AVG_Y1, AVG_Y2, AVG_Y3)
 
-boostedAVG1a$meanAVG <- rowMeans(boostedAVG[, c("AVG_Y1", "AVG_Y2", "AVG_Y3")], na.rm = TRUE)
+boostedAVG4a$meanAVG <- rowMeans(boostedAVG4a[, c("AVG_Y1", "AVG_Y2", "AVG_Y3")], na.rm = TRUE)
 
 
 #plot
-ggplot(boostedAVG1a, aes(x = predicted_avg, y = AVG_Y1)) +
+ggplot(boostedAVG4a, aes(x = predicted_avg, y = AVG_Y1)) +
   geom_point(color = "blue") +  # Plot the points
   geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") +  # Add a reference line (ideal prediction)
   labs(
@@ -298,7 +446,7 @@ ggplot(boostedAVG1a, aes(x = predicted_avg, y = AVG_Y1)) +
   theme_minimal()
 
 
-ggplot(boostedAVG1a, aes(x = predicted_avg, y = meanAVG)) +
+ggplot(boostedAVG4a, aes(x = predicted_avg, y = meanAVG)) +
   geom_point(color = "blue") +  # Plot the points
   geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") +  # Add a reference line (ideal prediction)
   labs(
@@ -311,14 +459,14 @@ ggplot(boostedAVG1a, aes(x = predicted_avg, y = meanAVG)) +
 
 #plot again, this time with players with meaningful 2024 PA
 
-boostedAVG1b <- batspredict |>
+boostedAVG4b <- batspredict |>
   filter(PA_Y1 >= 50) |>
   select(name, predicted_avg, AVG_Y1, AVG_Y2, AVG_Y3)
 
-boostedAVG1b$meanAVG <- rowMeans(boostedAVG1b[, c("AVG_Y1", "AVG_Y2", "AVG_Y3")], na.rm = TRUE)
+boostedAVG4b$meanAVG <- rowMeans(boostedAVG4b[, c("AVG_Y1", "AVG_Y2", "AVG_Y3")], na.rm = TRUE)
 
 
-ggplot(boostedAVG1b, aes(x = predicted_avg, y = AVG_Y1)) +
+ggplot(boostedAVG4b, aes(x = predicted_avg, y = AVG_Y1)) +
   geom_point(color = "blue") +  # Plot the points
   geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") +  # Add a reference line (ideal prediction)
   labs(
@@ -329,7 +477,7 @@ ggplot(boostedAVG1b, aes(x = predicted_avg, y = AVG_Y1)) +
   theme_minimal()
 
 
-ggplot(boostedAVG1b, aes(x = predicted_avg, y = meanAVG)) +
+ggplot(boostedAVG4b, aes(x = predicted_avg, y = meanAVG)) +
   geom_point(color = "blue") +  # Plot the points
   geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") +  # Add a reference line (ideal prediction)
   labs(
@@ -342,14 +490,14 @@ ggplot(boostedAVG1b, aes(x = predicted_avg, y = meanAVG)) +
 
 #plot again, increase PA
 
-boostedAVG1c <- batspredict |>
+boostedAVG4c <- batspredict |>
   filter(PA_Y1 >= 250) |>
   select(name, predicted_avg, AVG_Y1, AVG_Y2, AVG_Y3) 
 
-boostedAVG1c$meanAVG <- rowMeans(boostedAVG1c[, c("AVG_Y1", "AVG_Y2", "AVG_Y3")], na.rm = TRUE)
+boostedAVG4c$meanAVG <- rowMeans(boostedAVG4c[, c("AVG_Y1", "AVG_Y2", "AVG_Y3")], na.rm = TRUE)
 
 
-ggplot(boostedAVG1c, aes(x = predicted_avg, y = AVG_Y1)) +
+ggplot(boostedAVG4c, aes(x = predicted_avg, y = AVG_Y1)) +
   geom_point(color = "blue") +  # Plot the points
   geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") +  # Add a reference line (ideal prediction)
   labs(
@@ -359,7 +507,7 @@ ggplot(boostedAVG1c, aes(x = predicted_avg, y = AVG_Y1)) +
   ) +
   theme_minimal()
 
-ggplot(boostedAVG1c, aes(x = predicted_avg, y = meanAVG)) +
+ggplot(boostedAVG4c, aes(x = predicted_avg, y = meanAVG)) +
   geom_point(color = "blue") +  # Plot the points
   geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") +  # Add a reference line (ideal prediction)
   labs(
@@ -370,4 +518,4 @@ ggplot(boostedAVG1c, aes(x = predicted_avg, y = meanAVG)) +
   theme_minimal()
 
 
-write.csv(batspredict, "clean_unclean.csv", row.names = FALSE)
+write.csv(batspredict, "clean_lgavg.csv", row.names = FALSE)
