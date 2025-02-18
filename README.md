@@ -13,7 +13,7 @@ Currently, the training data does not include NA values and the plate appearance
 
 2.  Examine performance when trained with clean data, but predicting on data that includes missing season data for rookies and injured players
 
-  ~2a. Make all missing data league averages
+  ~2a. Make all missing data league averages~
 
   2b. Make missing data for rookies league average and missing data for vets career averages
   
